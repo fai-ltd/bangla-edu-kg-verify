@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Annotation Tool</title>
+<style>
+  :root {
+    --bg: #fbfaf8; --fg: #1d1d1f; --muted: #6b6b70; --line: #e2e0dc;
+    --card: #ffffff; --accent: #2f6f4e; --bad: #9d3b3b; --warn: #8a6d1f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#16171a; --fg:#e9e8e6; --muted:#9a9aa0; --line:#2c2e33;
+            --card:#1e2024; --accent:#63b98a; --bad:#d98080; --warn:#d4b458; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+         font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 24px 20px 80px; }
+  h1 { font-size: 19px; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
+  .setup { background:var(--card); border:1px solid var(--line); border-radius:10px;
+           padding:18px; margin-bottom:18px; }
+  .bar { height:5px; background:var(--line); border-radius:3px; overflow:hidden; margin:14px 0 6px; }
+  .bar > i { display:block; height:100%; background:var(--accent); width:0; transition:width .15s; }
+  .stats { display:flex; gap:18px; font-size:13px; color:var(--muted); margin-bottom:18px; flex-wrap:wrap; }
+  .stats b { color: var(--fg); font-weight:600; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px;
+          padding:22px; margin-bottom:16px; }
+  .triple { font-size:19px; line-height:1.9; word-break:break-word; }
+  .ent { font-weight:600; }
+  .rel { display:inline-block; padding:1px 9px; margin:0 6px; border-radius:20px;
+         background:var(--bg); border:1px solid var(--line); font-size:14px; color:var(--accent); }
+  .meta { color:var(--muted); font-size:12px; margin-bottom:14px;
+          text-transform:uppercase; letter-spacing:.05em; }
+  .src { margin-top:18px; padding-top:16px; border-top:1px solid var(--line);
+         color:var(--muted); font-size:14px; line-height:1.7; max-height:190px; overflow:auto; }
+  .keys { display:flex; gap:8px; flex-wrap:wrap; }
+  button { font:inherit; padding:9px 14px; border-radius:8px; border:1px solid var(--line);
+           background:var(--card); color:var(--fg); cursor:pointer; }
+  button:hover { border-color:var(--muted); }
+  button kbd { display:inline-block; min-width:17px; text-align:center; margin-right:7px;
+               padding:1px 4px; border-radius:4px; background:var(--bg);
+               border:1px solid var(--line); font-size:12px; font-family:inherit; }
+  .ok kbd { color:var(--accent); } .rl kbd { color:var(--warn); } .no kbd { color:var(--bad); }
+  .done { text-align:center; padding:50px 20px; }
+  .hint { color:var(--muted); font-size:12.5px; margin-top:14px; }
+  table { border-collapse:collapse; width:100%; font-size:13px; margin-top:10px; }
+  th,td { text-align:left; padding:5px 10px 5px 0; border-bottom:1px solid var(--line); }
+  input[type=file] { font:inherit; }
+  .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Annotation Tool</h1>
+  <div class="sub">Keyboard-driven review. Progress saves in this browser automatically.</div>
+
+  <div class="setup" id="setup">
+    <div class="row">
+      <input type="file" id="file" accept=".csv">
+      <button id="resume" hidden>Resume saved session</button>
+    </div>
+    <div class="hint">
+      Expects a CSV with an id column plus the fields to judge. Built for
+      <code>quality_sample.csv</code> and <code>biology_all_triples.csv</code>; any CSV with
+      <code>subject</code>/<code>relation</code>/<code>object</code> works.
+    </div>
+  </div>
+
+  <div id="app" hidden>
+    <div class="bar"><i id="fill"></i></div>
+    <div class="stats">
+      <span><b id="n">0</b> / <span id="total">0</span></span>
+      <span>correct <b id="c-ok">0</b></span>
+      <span>wrong relation <b id="c-rel">0</b></span>
+      <span>wrong <b id="c-no">0</b></span>
+      <span>skipped <b id="c-skip">0</b></span>
+      <span>precision so far <b id="prec">—</b></span>
+    </div>
+
+    <div class="card" id="card">
+      <div class="meta" id="meta"></div>
+      <div class="triple" id="triple"></div>
+      <div class="src" id="src"></div>
+    </div>
+
+    <div class="keys">
+      <button class="ok"  data-v="correct"><kbd>1</kbd>Correct</button>
+      <button class="rl"  data-v="wrong_relation"><kbd>2</kbd>Right fact, wrong relation</button>
+      <button class="no"  data-v="wrong"><kbd>3</kbd>Wrong / garbage</button>
+      <button data-v="skip"><kbd>S</kbd>Skip</button>
+      <button id="back"><kbd>←</kbd>Back</button>
+      <button id="export">Export CSV</button>
+    </div>
+    <div class="hint">
+      <b>2</b> means the subject and object are a real fact from the text but the relation
+      label is wrong — that distinction is what tells us whether to fix the vocabulary or
+      the extraction.
+    </div>
+  </div>
+
+  <div id="done" hidden class="done">
+    <h1>Done — <span id="dn"></span> judged</h1>
+    <div id="summary"></div>
+    <p><button id="export2">Export CSV</button> <button id="reset">Start over</button></p>
+  </div>
+</div>
+
+<script>
+// Minimal RFC4180-ish CSV parser: handles quoted fields, embedded commas and newlines.
+function parseCSV(text) {
+  const rows = []; let row = [], val = '', q = false;
+  text = text.replace(/^﻿/, '');
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"') { if (text[i+1] === '"') { val += '"'; i++; } else q = false; }
+      else val += c;
+    } else if (c === '"') q = true;
+    else if (c === ',') { row.push(val); val = ''; }
+    else if (c === '\n') { row.push(val); rows.push(row); row = []; val = ''; }
+    else if (c !== '\r') val += c;
+  }
+  if (val !== '' || row.length) { row.push(val); rows.push(row); }
+  const head = rows.shift().map(h => h.trim());
+  return rows.filter(r => r.length && r.some(x => x !== ''))
+             .map(r => Object.fromEntries(head.map((h, i) => [h, (r[i] ?? '').trim()])));
+}
+
+function toCSV(rows, cols) {
+  const esc = v => /[",\n]/.test(v ?? '') ? '"' + String(v).replace(/"/g, '""') + '"' : (v ?? '');
+  return [cols.join(','), ...rows.map(r => cols.map(c => esc(r[c])).join(','))].join('\n');
+}
+
+const KEY = 'annotate.session.v1';
+let rows = [], idx = 0, verdicts = {}, idCol = 'triple_id', name = '';
+
+const $ = id => document.getElementById(id);
+
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify({ name, idCol, rows, idx, verdicts })); }
+  catch (e) { /* private window or storage disabled — session just won't persist */ }
+}
+
+function load() {
+  try {
+    const s = JSON.parse(localStorage.getItem(KEY) || 'null');
+    if (s && s.rows && s.rows.length) return s;
+  } catch (e) {}
+  return null;
+}
+
+function start(data, fileName, saved) {
+  rows = data; name = fileName;
+  idCol = ['triple_id','qid','id'].find(c => rows[0] && c in rows[0]) || null;
+  if (saved) { idx = saved.idx; verdicts = saved.verdicts; }
+  $('setup').hidden = true; $('app').hidden = false;
+  $('total').textContent = rows.length;
+  render();
+}
+
+function idOf(i) { return idCol ? rows[i][idCol] : String(i); }
+
+function render() {
+  if (idx >= rows.length) return finish();
+  const r = rows[idx];
+  const bits = [];
+  if (r.chapter_no) bits.push('chapter ' + r.chapter_no);
+  if (r.chapter_title) bits.push(r.chapter_title);
+  if (idCol) bits.push(r[idCol]);
+  $('meta').textContent = bits.join(' · ');
+
+  $('triple').innerHTML = r.subject !== undefined
+    ? `<span class="ent"></span><span class="rel"></span><span class="ent2"></span>`
+    : '';
+  if (r.subject !== undefined) {
+    $('triple').querySelector('.ent').textContent = r.subject;
+    $('triple').querySelector('.rel').textContent = r.relation ?? '';
+    $('triple').querySelector('.ent2').textContent = r.object ?? '';
+  } else {
+    $('triple').textContent = r.question_text || r.question || JSON.stringify(r);
+  }
+  $('src').textContent = r.source_text || r.text || '';
+  $('src').hidden = !$('src').textContent;
+
+  const counts = tally();
+  $('n').textContent = counts.judged;
+  $('c-ok').textContent = counts.correct;
+  $('c-rel').textContent = counts.wrong_relation;
+  $('c-no').textContent = counts.wrong;
+  $('c-skip').textContent = counts.skip;
+  const denom = counts.correct + counts.wrong_relation + counts.wrong;
+  $('prec').textContent = denom ? Math.round(counts.correct / denom * 100) + '%' : '—';
+  $('fill').style.width = (idx / rows.length * 100) + '%';
+}
+
+function tally() {
+  const c = { judged: 0, correct: 0, wrong_relation: 0, wrong: 0, skip: 0 };
+  for (const v of Object.values(verdicts)) { c.judged++; if (v in c) c[v]++; }
+  return c;
+}
+
+function mark(v) {
+  verdicts[idOf(idx)] = v;
+  idx++; save(); render();
+}
+
+function finish() {
+  $('app').hidden = true; $('done').hidden = false;
+  const c = tally();
+  $('dn').textContent = c.judged;
+  const denom = c.correct + c.wrong_relation + c.wrong;
+  $('summary').innerHTML = `<table>
+    <tr><th>Correct</th><td>${c.correct}</td></tr>
+    <tr><th>Right fact, wrong relation</th><td>${c.wrong_relation}</td></tr>
+    <tr><th>Wrong / garbage</th><td>${c.wrong}</td></tr>
+    <tr><th>Skipped</th><td>${c.skip}</td></tr>
+    <tr><th>Precision (strict)</th><td>${denom ? (c.correct/denom*100).toFixed(1)+'%' : '—'}</td></tr>
+    <tr><th>Precision (fact correct, ignoring relation)</th><td>${denom ? ((c.correct+c.wrong_relation)/denom*100).toFixed(1)+'%' : '—'}</td></tr>
+  </table>`;
+}
+
+function exportCSV() {
+  const out = rows.map((r, i) => ({ ...r, verdict: verdicts[idOf(i)] || '' }));
+  const cols = [...Object.keys(rows[0]), 'verdict'].filter((c, i, a) => a.indexOf(c) === i);
+  const blob = new Blob([toCSV(out, cols)], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (name.replace(/\.csv$/, '') || 'annotations') + '_reviewed.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+$('file').addEventListener('change', e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const fr = new FileReader();
+  fr.onload = () => start(parseCSV(fr.result), f.name, null);
+  fr.readAsText(f, 'utf-8');
+});
+
+document.querySelectorAll('[data-v]').forEach(b =>
+  b.addEventListener('click', () => mark(b.dataset.v)));
+$('back').addEventListener('click', () => { if (idx > 0) { idx--; save(); render(); } });
+$('export').addEventListener('click', exportCSV);
+$('export2').addEventListener('click', exportCSV);
+$('reset').addEventListener('click', () => {
+  localStorage.removeItem(KEY); location.reload();
+});
+
+document.addEventListener('keydown', e => {
+  if ($('app').hidden) return;
+  const map = { '1': 'correct', '2': 'wrong_relation', '3': 'wrong', 's': 'skip', 'S': 'skip' };
+  if (map[e.key]) { e.preventDefault(); mark(map[e.key]); }
+  else if (e.key === 'ArrowLeft') { e.preventDefault(); if (idx > 0) { idx--; save(); render(); } }
+});
+
+const saved = load();
+if (saved) {
+  $('resume').hidden = false;
+  $('resume').textContent = `Resume ${saved.name} (${saved.idx}/${saved.rows.length})`;
+  $('resume').addEventListener('click', () => start(saved.rows, saved.name, saved));
+}
+</script>
+</body>
+</html>
