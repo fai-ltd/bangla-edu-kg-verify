@@ -1721,7 +1721,7 @@ model,qid,claim_no,claim,verdict,system
 3b-instruct,Q0075,1,ইতিহাস বিজ্ঞান এবং জীববিজ্ঞান পর্যালোচনা করতে প্রয়োজন ছিল,not_in_curriculum,G_nli
 3b-instruct,Q0075,2,"এছাড়াও, এটি শিক্ষার্থীর ভাবনা এবং জীবন পরিচয় প্রভাবিত করত",not_in_curriculum,G_nli
 3b-instruct,Q0076,0,ঢাকা/চাহিড়ের 4 ফসল (কাটার) জন্য বিশেষ এনজাইম ছাইকালীন এনজাইম (Chymase) হয়েছে,not_in_curriculum,G_nli
-3b-instruct,Q0076,1,আমি বলতে পারি ছাইকালীন এনজাইম কাটার মধ্যে গুড়ি এবং খাবাজ থেকে ধাতুগুলিকে ভাঙার জন্য ব্যবহার করা হয়,contradicted,G_nli
+3b-instruct,Q0076,1,আমি বলতে পারি ছাইকালীন এনজাইম কাটার মধ্যে গুড়ি এবং খাবাজ থেকে ধাতুগুলিকে ভাঙার জন্য ব্যবহার করা হয়,supported,G_nli
 3b-instruct,Q0077,0,অনুরাধা আধুনিক ল্যাবরেটরিতে ইউরিয়েস হাম্মাডার প্রক্রিয়া (Urea Hydrolysis) এর পরিণত প্রক্রিয়া গ্রহণ করেছিলেন,not_in_curriculum,G_nli
 3b-instruct,Q0077,1,এটি হল কিছু প্রাকৃতিক পরিবর্তনশীল মৌসুমিক পদার্থগুলির প্রভাবে প্রতিটি মৌসুমে পরিবর্তিত হওয়ার সম্ভাবনা ঘোষণা করার একটি প্রক্রিয়া,not_in_curriculum,G_nli
 3b-instruct,Q0077,2,এটি আধুনিক শিক্ষার্থীদের জন্য একটি খুবই জনপ্রিয় প্রক্রিয়া হয়েছে,not_in_curriculum,G_nli
@@ -1961,7 +1961,7 @@ model,qid,claim_no,claim,verdict,system
 7b-instruct,Q0065,0,পরাগায়নে প্রজাতির বিশুদ্ধতা নষ্ট হওয়ার সম্ভাবনা থাকে মিশ্রণ পরাগায়নে,not_in_curriculum,G_nli
 7b-instruct,Q0065,1,এখানে দুটি প্রজাতির খোলা ছাড়া আছে যা একসঙ্গে ফসলে পড়ে যায়,not_in_curriculum,G_nli
 7b-instruct,Q0065,2,এভাবে দুটি প্রজাতির DNA মিশে যায় যা প্রজাতির বিশুদ্ধতা নষ্ট করে,not_in_curriculum,G_nli
-7b-instruct,Q0066,0,ব্যাঙে মধুর নিষেক ঘটে,contradicted,G_nli
+7b-instruct,Q0066,0,ব্যাঙে মধুর নিষেক ঘটে,not_in_curriculum,G_nli
 7b-instruct,Q0066,1,এটি তাদের গাছগুলি হাড়িয়ে ফসল খসড়ে ফেললেও আসে,not_in_curriculum,G_nli
 7b-instruct,Q0066,2,মধুর নিষেক ব্যাঙের ভোজনের জন্য খুব প্রযিক্তিশীল,not_in_curriculum,G_nli
 7b-instruct,Q0067,0,অমরা বৃদ্ধদের মতো ছোট আরও বড় বছরগুলি অতিক্রম করেছে,not_in_curriculum,G_nli
